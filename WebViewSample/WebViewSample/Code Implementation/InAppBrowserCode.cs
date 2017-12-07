@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Net.Http;
-using System.IO;
-using System.Text;
-using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 
 using Xamarin.Forms;
-using System.Diagnostics;
+using PCLStorage;
 
 namespace WebViewSample
 {
     public class InAppBrowserCode : ContentPage
     {
+
         //this needs to be defined at class level for use within methods.
         private WebView webView;
         private RootObject result;
@@ -78,6 +76,19 @@ namespace WebViewSample
                     webView = new WebView() { WidthRequest = 1000, HeightRequest = 1000, Source = htmlSource }; //creates webview
                     layout.Children.Add(webView); //adds webview to layout
                 }
+
+                response = await client.GetAsync("http://layerseven.net/images/logo.png");
+
+                response.EnsureSuccessStatusCode();
+
+                string responseData = await response.Content.ReadAsStringAsync();
+
+                //string folderPath = Environment.ExternalStorageDirectory.AbsolutePath; //Android  
+                //string folderPath = Environment.ExternalStorageDirectory.AbsolutePath;
+
+                DependencyService.Get<IWriteFile>().WriteFile(responseData);
+
+
 
             }
         }

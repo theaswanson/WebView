@@ -8,6 +8,11 @@ using Xamarin.Forms;
 
 namespace WebViewSample
 {
+    public interface IWriteFile
+    {
+        void WriteFile(string text); //note that interface members are public by default
+    }
+
     public class App : Application
     {
         public App()
