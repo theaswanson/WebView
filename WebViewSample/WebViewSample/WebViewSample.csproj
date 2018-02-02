@@ -41,6 +41,7 @@
     <Compile Include="Code Implementation\InAppBrowserCode.cs" />
     <Compile Include="Code Implementation\LoadingLabelCode.cs" />
     <Compile Include="Code Implementation\LinkToInAppCode.cs" />
+    <Compile Include="Update.cs" />
     <Compile Include="XAML Implementation\InAppBrowserXaml.xaml.cs">
       <DependentUpon>InAppBrowserXaml.xaml</DependentUpon>
     </Compile>

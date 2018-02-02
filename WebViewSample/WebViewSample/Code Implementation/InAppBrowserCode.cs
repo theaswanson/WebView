@@ -13,6 +13,7 @@ namespace WebViewSample
         //this needs to be defined at class level for use within methods.
         private WebView webView;
         private RootObject result;
+        private string updateTime;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WebViewSample.InAppBrowserXaml"/> class.
@@ -30,7 +31,7 @@ namespace WebViewSample
             var forwardButton = new Button { Text = "Forward", HorizontalOptions = LayoutOptions.EndAndExpand };
             forwardButton.Clicked += forwardButtonClicked;
 
-            getJson(layout);
+            getJSON(layout);
 
             controlBar.Children.Add(backButton);
             controlBar.Children.Add(forwardButton);
@@ -41,7 +42,7 @@ namespace WebViewSample
         }
 
         //get JSON data, parse it, and generate the webview
-        async void getJson(StackLayout layout)
+        async void getJSON(StackLayout layout)
         {
             HtmlWebViewSource htmlSource = new HtmlWebViewSource();
 
@@ -49,8 +50,28 @@ namespace WebViewSample
             {
                 //download JSON
                 HttpResponseMessage response = await client.GetAsync("http://codechameleon.com/dev/fwt/siteContents.php");
+                HttpResponseMessage response2 = await client.GetAsync("http://codechameleon.com/dev/fwt/lastUpdate.php");
 
                 response.EnsureSuccessStatusCode();
+                response2.EnsureSuccessStatusCode();
+
+                using (HttpContent content = response2.Content)
+                {
+                    //convert data to string
+                    string responseBody = await response.Content.ReadAsStringAsync();
+
+                    Update updateObject = JsonConvert.DeserializeObject<Update>(responseBody);
+                    updateTime = updateObject.updateDate;
+                    DependencyService.Get<FileInterface>().WriteFile("data", "update.txt", updateTime);
+                }
+
+                if (DependencyService.Get<FileInterface>().FileExists("data", "update.txt"))
+                {
+                    if ()
+                    {
+
+                    }
+                }
 
                 using (HttpContent content = response.Content)
                 {
@@ -77,19 +98,20 @@ namespace WebViewSample
                     layout.Children.Add(webView); //adds webview to layout
                 }
 
+                
+                /*
                 response = await client.GetAsync("http://layerseven.net/images/logo.png");
 
                 response.EnsureSuccessStatusCode();
 
                 string responseData = await response.Content.ReadAsStringAsync();
 
-                //string folderPath = Environment.ExternalStorageDirectory.AbsolutePath; //Android  
-                //string folderPath = Environment.ExternalStorageDirectory.AbsolutePath;
+                string folderPath = Environment.ExternalStorageDirectory.AbsolutePath; //Android  
+                string folderPath = Environment.ExternalStorageDirectory.AbsolutePath;
 
                 DependencyService.Get<IWriteFile>().WriteFile(responseData);
-
-
-
+                */
+                
             }
         }
 

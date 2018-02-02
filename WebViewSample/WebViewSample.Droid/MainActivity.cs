@@ -10,36 +10,37 @@ using PCLStorage;
 using WebViewSample.Droid;
 using System.IO;
 
-[assembly: Xamarin.Forms.Dependency(typeof(WriteFileImplementation))]
+[assembly: Xamarin.Forms.Dependency(typeof(FileImplementation))]
 namespace WebViewSample.Droid
 {
-    public class WriteFileImplementation : IWriteFile
+    public class FileImplementation : FileInterface
     {
-        public WriteFileImplementation() { }
+        public FileImplementation() { }
 
-        public async void WriteFile(string text)
+        public string GetPath(string path, string fileName)
         {
-            string documentsPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
+            string path1 = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal); // app directory
+            string path2 = path + fileName; // custom folder and file name
+            string finalPath = Path.Combine(path1, path2);
 
-            Console.WriteLine(documentsPath);
+            Console.WriteLine(finalPath);
 
-            string localFilename = "image.png";
-            string localPath = Path.Combine(documentsPath, localFilename);
-            File.WriteAllText(localPath, text); // writes to local storage
+            return finalPath;
+        }
 
-            /*
-            // get hold of the file system
-            IFolder rootFolder = FileSystem.Current.LocalStorage;
+        public async void WriteFile(string path, string fileName, string data)
+        {
+            File.WriteAllText(GetPath(path, fileName), data); // writes to local storage
+        }
 
-            // create a folder, if one does not exist already
-            IFolder folder = await rootFolder.CreateFolderAsync("MySubFolder", CreationCollisionOption.OpenIfExists);
+        public async void ReadFile(string text)
+        {
 
-            // create a file, overwriting any existing file
-            IFile file = await folder.CreateFileAsync("MyFile.png", CreationCollisionOption.ReplaceExisting);
+        }
 
-            // populate the file with some text
-            await file.WriteAllTextAsync(text);
-            */
+        public bool FileExists(string path, string fileName)
+        {
+            return File.Exists(GetPath(path, fileName));
         }
     }
 
