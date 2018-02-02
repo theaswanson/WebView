@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 
 using Xamarin.Forms;
 using PCLStorage;
+using System.Collections.Generic;
 
 namespace WebViewSample
 {
@@ -59,18 +60,20 @@ namespace WebViewSample
                 {
                     //convert data to string
                     string responseBody = await response.Content.ReadAsStringAsync();
+                    string responseBody2 = await response2.Content.ReadAsStringAsync();
 
-                    Update updateObject = JsonConvert.DeserializeObject<Update>(responseBody);
+                    Update updateObject = JsonConvert.DeserializeObject<Update>(responseBody2);
                     updateTime = updateObject.updateDate;
                     DependencyService.Get<FileInterface>().WriteFile("data", "update.txt", updateTime);
                 }
 
                 if (DependencyService.Get<FileInterface>().FileExists("data", "update.txt"))
                 {
-                    if ()
-                    {
+                    string updateFile = DependencyService.Get<FileInterface>().GetPath("data", "update.txt");
 
-                    }
+                    List<string> lines = DependencyService.Get<FileInterface>().ReadFile(updateFile);
+
+                    string line = lines.ToString();
                 }
 
                 using (HttpContent content = response.Content)

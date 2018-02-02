@@ -9,6 +9,7 @@ using Android.OS;
 using PCLStorage;
 using WebViewSample.Droid;
 using System.IO;
+using System.Collections.Generic;
 
 [assembly: Xamarin.Forms.Dependency(typeof(FileImplementation))]
 namespace WebViewSample.Droid
@@ -33,9 +34,59 @@ namespace WebViewSample.Droid
             File.WriteAllText(GetPath(path, fileName), data); // writes to local storage
         }
 
-        public async void ReadFile(string text)
+        public List<string> ReadFile(string file, int lineCount)
         {
+            StreamReader fileReader = File.OpenText(file);
 
+            if (fileReader == null)
+                return null;
+            else
+            {
+                List<string> result = new List<string>();
+                string line = string.Empty;
+                int ctr = 0;
+                while ((line = fileReader.ReadLine()) != null)
+                {
+                    result.Add(line);
+                    ctr++;
+                    if (ctr >= lineCount) break;
+                }
+                if (line == null)
+                {
+                    if (fileReader != null)
+                    {
+                        fileReader.Dispose();
+                    }
+                }
+
+                return result;
+            }
+        }
+
+        public List<string> ReadFile(string file)
+        {
+            StreamReader fileReader = File.OpenText(file);
+
+            if (fileReader == null)
+                return null;
+            else
+            {
+                List<string> result = new List<string>();
+                string line = string.Empty;
+                while ((line = fileReader.ReadLine()) != null)
+                {
+                    result.Add(line);
+                }
+                if (line == null)
+                {
+                    if (fileReader != null)
+                    {
+                        fileReader.Dispose();
+                    }
+                }
+
+                return result;
+            }
         }
 
         public bool FileExists(string path, string fileName)
