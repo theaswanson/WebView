@@ -34,7 +34,7 @@ namespace WebViewSample.Droid
             File.WriteAllText(GetPath(path, fileName), data); // writes to local storage
         }
 
-        public List<string> ReadFile(string file, int lineCount)
+        public string ReadFile(string file, int lineCount)
         {
             StreamReader fileReader = File.OpenText(file);
 
@@ -59,7 +59,7 @@ namespace WebViewSample.Droid
                     }
                 }
 
-                return result;
+                return line;
             }
         }
 

@@ -51,29 +51,39 @@ namespace WebViewSample
             {
                 //download JSON
                 HttpResponseMessage response = await client.GetAsync("http://codechameleon.com/dev/fwt/siteContents.php");
-                HttpResponseMessage response2 = await client.GetAsync("http://codechameleon.com/dev/fwt/lastUpdate.php");
-
                 response.EnsureSuccessStatusCode();
+
+                HttpResponseMessage response2 = await client.GetAsync("http://codechameleon.com/dev/fwt/lastUpdate.php");
                 response2.EnsureSuccessStatusCode();
 
+                //convert data to string
                 using (HttpContent content = response2.Content)
                 {
-                    //convert data to string
-                    string responseBody = await response.Content.ReadAsStringAsync();
+                    string localUpdateTime = "";
+
+                    //get local update time
+                    if (DependencyService.Get<FileInterface>().FileExists("data", "update.txt"))
+                    {
+                        string updateFile = DependencyService.Get<FileInterface>().GetPath("data", "update.txt");
+
+                        localUpdateTime = DependencyService.Get<FileInterface>().ReadFile(updateFile, 1);
+                    }
+
                     string responseBody2 = await response2.Content.ReadAsStringAsync();
 
                     Update updateObject = JsonConvert.DeserializeObject<Update>(responseBody2);
                     updateTime = updateObject.updateDate;
-                    DependencyService.Get<FileInterface>().WriteFile("data", "update.txt", updateTime);
-                }
 
-                if (DependencyService.Get<FileInterface>().FileExists("data", "update.txt"))
-                {
-                    string updateFile = DependencyService.Get<FileInterface>().GetPath("data", "update.txt");
+                    if (String.Compare(updateTime, localUpdateTime) < 0)
+                    {
 
-                    List<string> lines = DependencyService.Get<FileInterface>().ReadFile(updateFile);
+                    }
 
-                    string line = lines.ToString();
+                    if (!DependencyService.Get<FileInterface>().FileExists("data", "update.txt"))
+                    {
+                        DependencyService.Get<FileInterface>().WriteFile("data", "update.txt", updateTime);
+                    }
+
                 }
 
                 using (HttpContent content = response.Content)
@@ -82,7 +92,7 @@ namespace WebViewSample
                     string responseBody = await response.Content.ReadAsStringAsync();
 
                     result = JsonConvert.DeserializeObject<RootObject>(responseBody);
-                    
+
                     string thing = ""; //stores JSON objects as HTML
 
                     foreach (var pages in result.contents.pages) // converts JSON objects to HTML used in the webview
@@ -101,7 +111,7 @@ namespace WebViewSample
                     layout.Children.Add(webView); //adds webview to layout
                 }
 
-                
+
                 /*
                 response = await client.GetAsync("http://layerseven.net/images/logo.png");
 
@@ -114,7 +124,7 @@ namespace WebViewSample
 
                 DependencyService.Get<IWriteFile>().WriteFile(responseData);
                 */
-                
+
             }
         }
 

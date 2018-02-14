@@ -13,7 +13,7 @@ namespace WebViewSample
         string GetPath(string path, string fileName);
         void WriteFile(string path, string fileName, string data); //note that interface members are public by default
         List<string> ReadFile(string file);
-        List<string> ReadFile(string file, int lineCount);
+        string ReadFile(string file, int lineCount);
         bool FileExists(string path, string fileName); //note that interface members are public by default
     }
 
