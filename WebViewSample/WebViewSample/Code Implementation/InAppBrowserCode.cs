@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Net.Http;
 using Newtonsoft.Json;
 
@@ -12,9 +13,9 @@ namespace WebViewSample
     {
 
         //this needs to be defined at class level for use within methods.
-        private WebView webView;
-        private RootObject result;
-        private string updateTime;
+        private WebView myWebView;
+        private RootObject JSONData;
+        private string UpdateTime;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WebViewSample.InAppBrowserXaml"/> class.
@@ -32,7 +33,7 @@ namespace WebViewSample
             var forwardButton = new Button { Text = "Forward", HorizontalOptions = LayoutOptions.EndAndExpand };
             forwardButton.Clicked += forwardButtonClicked;
 
-            getJSON(layout);
+            GetJSON(layout);
 
             controlBar.Children.Add(backButton);
             controlBar.Children.Add(forwardButton);
@@ -41,76 +42,87 @@ namespace WebViewSample
 
             Content = layout;
         }
-
-        //get JSON data, parse it, and generate the webview
-        async void getJSON(StackLayout layout)
+        
+        async void GetJSON(StackLayout layout)
         {
-            HtmlWebViewSource htmlSource = new HtmlWebViewSource();
+            HtmlWebViewSource HTMLSource = new HtmlWebViewSource();
 
             using (var client = new HttpClient())
             {
-                //download JSON
-                HttpResponseMessage response = await client.GetAsync("http://codechameleon.com/dev/fwt/siteContents.php");
-                response.EnsureSuccessStatusCode();
-
-                HttpResponseMessage response2 = await client.GetAsync("http://codechameleon.com/dev/fwt/lastUpdate.php");
-                response2.EnsureSuccessStatusCode();
-
-                //convert data to string
-                using (HttpContent content = response2.Content)
+                HttpResponseMessage ContentsResponse = await client.GetAsync("http://codechameleon.com/dev/fwt/siteContents.php");
+                HttpResponseMessage LastUpdateResponse = await client.GetAsync("http://codechameleon.com/dev/fwt/lastUpdate.php");
+                ContentsResponse.EnsureSuccessStatusCode();
+                LastUpdateResponse.EnsureSuccessStatusCode();
+                
+                using (HttpContent content = LastUpdateResponse.Content)
                 {
-                    string localUpdateTime = "";
+                    string UpdateFolder = "data";
+                    string UpdateFile = "update.txt";
+
+                    string StoredUpdateTimeRaw = "";
+                    string UpdateTimeFormat = "yyyy-MM-dd hh:mm:ss";
+                    CultureInfo provider = CultureInfo.InvariantCulture;
+
+                    DateTime StoredUpdateTime;
+                    DateTime NewUpdateTime;
 
                     //get local update time
-                    if (DependencyService.Get<FileInterface>().FileExists("data", "update.txt"))
+                    if (DependencyService.Get<IFile>().FileExists(UpdateFolder, UpdateFile)) // if the update file already exists
                     {
-                        string updateFile = DependencyService.Get<FileInterface>().GetPath("data", "update.txt");
+                        string UpdateFilePath = DependencyService.Get<IFile>().GetPath(UpdateFolder, UpdateFile); // get file path to update file
 
-                        localUpdateTime = DependencyService.Get<FileInterface>().ReadFile(updateFile, 1);
-                    }
+                        /*
+                        if (DependencyService.Get<IFile>().ReadFile(UpdateFilePath, 1) == "")
+                        {
+                            DependencyService.Get<IFile>().WriteFile(UpdateFolder, UpdateFile, "0");
+                        }
+                        */
 
-                    string responseBody2 = await response2.Content.ReadAsStringAsync();
+                        StoredUpdateTimeRaw = DependencyService.Get<IFile>().ReadFile(UpdateFilePath, 1);
+                        StoredUpdateTime = DateTime.ParseExact(StoredUpdateTimeRaw, UpdateTimeFormat, provider);
 
-                    Update updateObject = JsonConvert.DeserializeObject<Update>(responseBody2);
-                    updateTime = updateObject.updateDate;
+                        string lastUpdateBody = await LastUpdateResponse.Content.ReadAsStringAsync();
+                        Update UpdateObject = JsonConvert.DeserializeObject<Update>(lastUpdateBody); // new update time from wordpress
+                        UpdateTime = UpdateObject.updateDate;
+                        NewUpdateTime = DateTime.ParseExact(UpdateTime, UpdateTimeFormat, provider);
 
-                    if (String.Compare(updateTime, localUpdateTime) < 0)
-                    {
-
-                    }
-
-                    if (!DependencyService.Get<FileInterface>().FileExists("data", "update.txt"))
-                    {
-                        DependencyService.Get<FileInterface>().WriteFile("data", "update.txt", updateTime);
+                        if (DateTime.Compare(NewUpdateTime, StoredUpdateTime) > 0) // if the new time is greater than the local time
+                        {
+                            // update local time to new time
+                            DependencyService.Get<IFile>().WriteFile(UpdateFolder, UpdateFile, UpdateTime);
+                        }
+                        else
+                        {
+                            // don't update
+                        }
                     }
 
                 }
 
-                using (HttpContent content = response.Content)
+                using (HttpContent content = ContentsResponse.Content)
                 {
                     //convert data to string
-                    string responseBody = await response.Content.ReadAsStringAsync();
+                    string JSONDataRaw = await ContentsResponse.Content.ReadAsStringAsync();
 
-                    result = JsonConvert.DeserializeObject<RootObject>(responseBody);
+                    JSONData = JsonConvert.DeserializeObject<RootObject>(JSONDataRaw);
 
-                    string thing = ""; //stores JSON objects as HTML
+                    string HTMLBody = ""; //stores JSON objects as HTML
 
-                    foreach (var pages in result.contents.pages) // converts JSON objects to HTML used in the webview
+                    foreach (var Page in JSONData.contents.pages) // converts JSON objects to HTML used in the webview
                     {
-                        thing += "<h1>" + pages.name + "</h1>";
-                        thing += "<h3>" + pages.slug + "</h3>";
-                        thing += "<h6>" + pages.coverImage + "</h6>";
-                        thing += "<p>" + pages.body + "</p>";
-                        thing += "<br />";
+                        HTMLBody += "<h1>" + Page.name + "</h1>";
+                        HTMLBody += "<h3>" + Page.slug + "</h3>";
+                        HTMLBody += "<h6>" + Page.coverImage + "</h6>";
+                        HTMLBody += "<p>" + Page.body + "</p>";
+                        HTMLBody += "<br />";
                     }
 
-                    htmlSource.Html = @"<html><body>" + thing + "</body></html>"; //HTML source for the webview
+                    HTMLSource.Html = @"<html><body>" + HTMLBody + "</body></html>"; //HTML source for the webview
 
                     //WebView needs to be given a height and width request within layouts to render
-                    webView = new WebView() { WidthRequest = 1000, HeightRequest = 1000, Source = htmlSource }; //creates webview
-                    layout.Children.Add(webView); //adds webview to layout
+                    myWebView = new WebView() { WidthRequest = 1000, HeightRequest = 1000, Source = HTMLSource };
+                    layout.Children.Add(myWebView);
                 }
-
 
                 /*
                 response = await client.GetAsync("http://layerseven.net/images/logo.png");
@@ -134,9 +146,9 @@ namespace WebViewSample
         /// </summary>	
         void backButtonClicked(object sender, EventArgs e)
         {
-            if (webView.CanGoBack)
+            if (myWebView.CanGoBack)
             {
-                webView.GoBack();
+                myWebView.GoBack();
             }
             else
             {
@@ -151,9 +163,9 @@ namespace WebViewSample
         /// </summary>
         void forwardButtonClicked(object sender, EventArgs e)
         {
-            if (webView.CanGoForward)
+            if (myWebView.CanGoForward)
             {
-                webView.GoForward();
+                myWebView.GoForward();
             }
         }
     }

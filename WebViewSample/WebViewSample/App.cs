@@ -8,7 +8,7 @@ using Xamarin.Forms;
 
 namespace WebViewSample
 {
-    public interface FileInterface
+    public interface IFile
     {
         string GetPath(string path, string fileName);
         void WriteFile(string path, string fileName, string data); //note that interface members are public by default

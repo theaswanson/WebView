@@ -14,7 +14,7 @@ using System.Collections.Generic;
 [assembly: Xamarin.Forms.Dependency(typeof(FileImplementation))]
 namespace WebViewSample.Droid
 {
-    public class FileImplementation : FileInterface
+    public class FileImplementation : IFile
     {
         public FileImplementation() { }
 
@@ -59,6 +59,7 @@ namespace WebViewSample.Droid
                     }
                 }
 
+                fileReader.Close();
                 return line;
             }
         }
@@ -85,6 +86,7 @@ namespace WebViewSample.Droid
                     }
                 }
 
+                fileReader.Close();
                 return result;
             }
         }
