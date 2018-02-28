@@ -11,7 +11,6 @@ namespace WebViewSample
 {
     public class InAppBrowserCode : ContentPage
     {
-
         //this needs to be defined at class level for use within methods.
         private WebView myWebView;
         private RootObject JSONData;
@@ -42,7 +41,7 @@ namespace WebViewSample
 
             Content = layout;
         }
-        
+
         async void GetJSON(StackLayout layout)
         {
             HtmlWebViewSource HTMLSource = new HtmlWebViewSource();
@@ -53,76 +52,58 @@ namespace WebViewSample
                 HttpResponseMessage LastUpdateResponse = await client.GetAsync("http://codechameleon.com/dev/fwt/lastUpdate.php");
                 ContentsResponse.EnsureSuccessStatusCode();
                 LastUpdateResponse.EnsureSuccessStatusCode();
+
+                string UpdateFolder = "data";
+                string UpdateFile = "update.txt";
+
+                string StoredUpdateTimeRaw = "";
+                string UpdateTimeFormat = "yyyy-MM-dd hh:mm:ss";
+                CultureInfo provider = CultureInfo.InvariantCulture;
+
+                DateTime StoredUpdateTime;
+                DateTime NewUpdateTime;
+
+                string lastUpdateBody = await LastUpdateResponse.Content.ReadAsStringAsync();
+                Update UpdateObject = JsonConvert.DeserializeObject<Update>(lastUpdateBody);
+                UpdateTime = UpdateObject.updateDate;
+                NewUpdateTime = DateTime.ParseExact(UpdateTime, UpdateTimeFormat, provider);
+
+                if (DependencyService.Get<IFile>().FileExists(UpdateFolder, UpdateFile))
+                {
+                    string UpdateFilePath = DependencyService.Get<IFile>().GetPath(UpdateFolder, UpdateFile);
+
+                    StoredUpdateTimeRaw = DependencyService.Get<IFile>().ReadFile(UpdateFilePath, 1);
+                    StoredUpdateTime = DateTime.ParseExact(StoredUpdateTimeRaw, UpdateTimeFormat, provider);
+
+                    if (DateTime.Compare(NewUpdateTime, StoredUpdateTime) > 0)
+                    {
+                        DependencyService.Get<IFile>().WriteFile(UpdateFolder, UpdateFile, UpdateTime);
+                    }
+                }
+                else
+                {
+                    DependencyService.Get<IFile>().WriteFile(UpdateFolder, UpdateFile, UpdateTime);
+                }
                 
-                using (HttpContent content = LastUpdateResponse.Content)
+                string JSONDataRaw = await ContentsResponse.Content.ReadAsStringAsync();
+                JSONData = JsonConvert.DeserializeObject<RootObject>(JSONDataRaw);
+
+                string HTMLBody = "";
+
+                foreach (var Page in JSONData.contents.pages)
                 {
-                    string UpdateFolder = "data";
-                    string UpdateFile = "update.txt";
-
-                    string StoredUpdateTimeRaw = "";
-                    string UpdateTimeFormat = "yyyy-MM-dd hh:mm:ss";
-                    CultureInfo provider = CultureInfo.InvariantCulture;
-
-                    DateTime StoredUpdateTime;
-                    DateTime NewUpdateTime;
-
-                    //get local update time
-                    if (DependencyService.Get<IFile>().FileExists(UpdateFolder, UpdateFile)) // if the update file already exists
-                    {
-                        string UpdateFilePath = DependencyService.Get<IFile>().GetPath(UpdateFolder, UpdateFile); // get file path to update file
-
-                        /*
-                        if (DependencyService.Get<IFile>().ReadFile(UpdateFilePath, 1) == "")
-                        {
-                            DependencyService.Get<IFile>().WriteFile(UpdateFolder, UpdateFile, "0");
-                        }
-                        */
-
-                        StoredUpdateTimeRaw = DependencyService.Get<IFile>().ReadFile(UpdateFilePath, 1);
-                        StoredUpdateTime = DateTime.ParseExact(StoredUpdateTimeRaw, UpdateTimeFormat, provider);
-
-                        string lastUpdateBody = await LastUpdateResponse.Content.ReadAsStringAsync();
-                        Update UpdateObject = JsonConvert.DeserializeObject<Update>(lastUpdateBody); // new update time from wordpress
-                        UpdateTime = UpdateObject.updateDate;
-                        NewUpdateTime = DateTime.ParseExact(UpdateTime, UpdateTimeFormat, provider);
-
-                        if (DateTime.Compare(NewUpdateTime, StoredUpdateTime) > 0) // if the new time is greater than the local time
-                        {
-                            // update local time to new time
-                            DependencyService.Get<IFile>().WriteFile(UpdateFolder, UpdateFile, UpdateTime);
-                        }
-                        else
-                        {
-                            // don't update
-                        }
-                    }
-
+                    HTMLBody += "<h1>" + Page.name + "</h1>";
+                    HTMLBody += "<h3>" + Page.slug + "</h3>";
+                    HTMLBody += "<h6>" + Page.coverImage + "</h6>";
+                    HTMLBody += "<p>" + Page.body + "</p>";
+                    HTMLBody += "<br />";
                 }
 
-                using (HttpContent content = ContentsResponse.Content)
-                {
-                    //convert data to string
-                    string JSONDataRaw = await ContentsResponse.Content.ReadAsStringAsync();
+                HTMLSource.Html = @"<html><body>" + HTMLBody + "</body></html>";
 
-                    JSONData = JsonConvert.DeserializeObject<RootObject>(JSONDataRaw);
-
-                    string HTMLBody = ""; //stores JSON objects as HTML
-
-                    foreach (var Page in JSONData.contents.pages) // converts JSON objects to HTML used in the webview
-                    {
-                        HTMLBody += "<h1>" + Page.name + "</h1>";
-                        HTMLBody += "<h3>" + Page.slug + "</h3>";
-                        HTMLBody += "<h6>" + Page.coverImage + "</h6>";
-                        HTMLBody += "<p>" + Page.body + "</p>";
-                        HTMLBody += "<br />";
-                    }
-
-                    HTMLSource.Html = @"<html><body>" + HTMLBody + "</body></html>"; //HTML source for the webview
-
-                    //WebView needs to be given a height and width request within layouts to render
-                    myWebView = new WebView() { WidthRequest = 1000, HeightRequest = 1000, Source = HTMLSource };
-                    layout.Children.Add(myWebView);
-                }
+                //WebView needs to be given a height and width request within layouts to render
+                myWebView = new WebView() { WidthRequest = 1000, HeightRequest = 1000, Source = HTMLSource };
+                layout.Children.Add(myWebView);
 
                 /*
                 response = await client.GetAsync("http://layerseven.net/images/logo.png");
