@@ -19,7 +19,7 @@ namespace WebViewSample
 		/// <param name="e">E.</param>
 		void navButtonClicked(object sender, EventArgs e)
 		{
-			this.Navigation.PushAsync (new InAppBrowserXaml ("http://www.xamarin.com/"));
+			this.Navigation.PushAsync (new InAppBrowserXaml ("http://www.layerseven.net/"));
 		}
 	}
 }

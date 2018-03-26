@@ -16,13 +16,19 @@ namespace WebViewSample
         private RootObject JSONData;
         private string UpdateTime;
 
+        public string UpdateTimeLinkDev = "https://fwt.codechameleon.com/api-last-update/";
+        public string SiteContentsLinkDev = "https://fwt.codechameleon.com/api-content/";
+
+        public string UpdateTimeLinkLive = "https://fwtrails.org/api-last-update/";
+        public string SiteContentsLinkLive = "https://fwtrails.org/api-content/";
+
         /// <summary>
         /// Initializes a new instance of the <see cref="WebViewSample.InAppBrowserXaml"/> class.
         /// Takes a URL indicating the starting page for the browser control.
         /// </summary>
         /// <param name="URL">URL to display in the browser.</param>
         public InAppBrowserCode(string URL)
-        {
+        {            
             this.Title = "Browser";
             var layout = new StackLayout();
             var controlBar = new StackLayout() { Orientation = StackOrientation.Horizontal };
@@ -44,12 +50,28 @@ namespace WebViewSample
 
         async void GetJSON(StackLayout layout)
         {
+            string UpdateTimeLink;
+            string SiteContentsLink;
+
+            bool LiveMode = false;
+
+            if (LiveMode)
+            {
+                UpdateTimeLink = UpdateTimeLinkLive;
+                SiteContentsLink = SiteContentsLinkLive;
+            }
+            else
+            {
+                UpdateTimeLink = UpdateTimeLinkDev;
+                SiteContentsLink = SiteContentsLinkDev;
+            }
+
             HtmlWebViewSource HTMLSource = new HtmlWebViewSource();
 
             using (var client = new HttpClient())
             {
-                HttpResponseMessage ContentsResponse = await client.GetAsync("http://codechameleon.com/dev/fwt/siteContents.php");
-                HttpResponseMessage LastUpdateResponse = await client.GetAsync("http://codechameleon.com/dev/fwt/lastUpdate.php");
+                HttpResponseMessage ContentsResponse = await client.GetAsync(SiteContentsLink);
+                HttpResponseMessage LastUpdateResponse = await client.GetAsync(UpdateTimeLink);
                 ContentsResponse.EnsureSuccessStatusCode();
                 LastUpdateResponse.EnsureSuccessStatusCode();
 

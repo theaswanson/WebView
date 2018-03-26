@@ -7,7 +7,7 @@ namespace WebViewSample
 	public class LoadingLabelCode : ContentPage
 	{
 		//these need to be defined at class level for use in methods.
-		WebView webView;
+		//WebView webView;
 		Label labelLoading;
 
 		public LoadingLabelCode ()
@@ -19,7 +19,9 @@ namespace WebViewSample
 			//Loading label should not render by default.
 			labelLoading = new Label () { Text = "Loading...", IsVisible = false};
 
-			webView = new WebView () { HeightRequest = 1000, WidthRequest = 1000, Source = "http://www.xamarin.com/" };
+			var webView = new WebView () { HeightRequest = 1000, WidthRequest = 1000, Source = "http://www.google.com/" };
+
+            webView.Source = "http://google.com";
 
 			webView.Navigated += webviewNavigated;
 			webView.Navigating += webviewNavigating;
