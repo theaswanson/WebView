@@ -115,7 +115,7 @@ namespace WebViewSample
                 foreach (var Page in JSONData.contents.pages)
                 {
                     HTMLBody += "<h1>" + Page.name + "</h1>";
-                    HTMLBody += "<h3>" + Page.slug + "</h3>";
+                    HTMLBody += "<h1>" + Page.slug + "</h1>";
                     HTMLBody += "<h6>" + Page.coverImage + "</h6>";
                     HTMLBody += "<p>" + Page.body + "</p>";
                     HTMLBody += "<br />";
