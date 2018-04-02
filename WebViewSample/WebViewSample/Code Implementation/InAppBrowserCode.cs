@@ -16,6 +16,10 @@ namespace WebViewSample
         private RootObject JSONData;
         private string UpdateTime;
 
+        bool LiveMode = false;
+        string UpdateTimeLink;
+        string SiteContentsLink;
+
         public string UpdateTimeLinkDev = "https://fwt.codechameleon.com/api-last-update/";
         public string SiteContentsLinkDev = "https://fwt.codechameleon.com/api-content/";
 
@@ -28,7 +32,18 @@ namespace WebViewSample
         /// </summary>
         /// <param name="URL">URL to display in the browser.</param>
         public InAppBrowserCode(string URL)
-        {            
+        {
+            if (LiveMode)
+            {
+                UpdateTimeLink = UpdateTimeLinkLive;
+                SiteContentsLink = SiteContentsLinkLive;
+            }
+            else
+            {
+                UpdateTimeLink = UpdateTimeLinkDev;
+                SiteContentsLink = SiteContentsLinkDev;
+            }
+
             this.Title = "Browser";
             var layout = new StackLayout();
             var controlBar = new StackLayout() { Orientation = StackOrientation.Horizontal };
@@ -50,97 +65,64 @@ namespace WebViewSample
 
         async void GetJSON(StackLayout layout)
         {
-            string UpdateTimeLink;
-            string SiteContentsLink;
-
-            bool LiveMode = false;
-
-            if (LiveMode)
-            {
-                UpdateTimeLink = UpdateTimeLinkLive;
-                SiteContentsLink = SiteContentsLinkLive;
-            }
-            else
-            {
-                UpdateTimeLink = UpdateTimeLinkDev;
-                SiteContentsLink = SiteContentsLinkDev;
-            }
-
             HtmlWebViewSource HTMLSource = new HtmlWebViewSource();
 
-            using (var client = new HttpClient())
+            var client = new HttpClient();
+            HttpResponseMessage ContentsResponse = await client.GetAsync(SiteContentsLink);
+            HttpResponseMessage LastUpdateResponse = await client.GetAsync(UpdateTimeLink);
+            ContentsResponse.EnsureSuccessStatusCode();
+            LastUpdateResponse.EnsureSuccessStatusCode();
+
+            string UpdateFolder = "data";
+            string UpdateFile = "update.txt";
+
+            string StoredUpdateTimeRaw = "";
+            string UpdateTimeFormat = "yyyy-MM-dd hh:mm:ss";
+            CultureInfo provider = CultureInfo.InvariantCulture;
+
+            DateTime StoredUpdateTime;
+            DateTime NewUpdateTime;
+
+            string lastUpdateBody = await LastUpdateResponse.Content.ReadAsStringAsync();
+            lastUpdateBody = lastUpdateBody.Substring(0, UpdateTimeFormat.Length);
+            UpdateTime = lastUpdateBody;
+            NewUpdateTime = DateTime.ParseExact(UpdateTime, UpdateTimeFormat, provider);
+
+            if (DependencyService.Get<IFile>().FileExists(UpdateFolder, UpdateFile))
             {
-                HttpResponseMessage ContentsResponse = await client.GetAsync(SiteContentsLink);
-                HttpResponseMessage LastUpdateResponse = await client.GetAsync(UpdateTimeLink);
-                ContentsResponse.EnsureSuccessStatusCode();
-                LastUpdateResponse.EnsureSuccessStatusCode();
+                string UpdateFilePath = DependencyService.Get<IFile>().GetPath(UpdateFolder, UpdateFile);
 
-                string UpdateFolder = "data";
-                string UpdateFile = "update.txt";
+                StoredUpdateTimeRaw = DependencyService.Get<IFile>().ReadFile(UpdateFilePath, 1);
+                StoredUpdateTime = DateTime.ParseExact(StoredUpdateTimeRaw, UpdateTimeFormat, provider);
 
-                string StoredUpdateTimeRaw = "";
-                string UpdateTimeFormat = "yyyy-MM-dd hh:mm:ss";
-                CultureInfo provider = CultureInfo.InvariantCulture;
-
-                DateTime StoredUpdateTime;
-                DateTime NewUpdateTime;
-
-                string lastUpdateBody = await LastUpdateResponse.Content.ReadAsStringAsync();
-                Update UpdateObject = JsonConvert.DeserializeObject<Update>(lastUpdateBody);
-                UpdateTime = UpdateObject.updateDate;
-                NewUpdateTime = DateTime.ParseExact(UpdateTime, UpdateTimeFormat, provider);
-
-                if (DependencyService.Get<IFile>().FileExists(UpdateFolder, UpdateFile))
-                {
-                    string UpdateFilePath = DependencyService.Get<IFile>().GetPath(UpdateFolder, UpdateFile);
-
-                    StoredUpdateTimeRaw = DependencyService.Get<IFile>().ReadFile(UpdateFilePath, 1);
-                    StoredUpdateTime = DateTime.ParseExact(StoredUpdateTimeRaw, UpdateTimeFormat, provider);
-
-                    if (DateTime.Compare(NewUpdateTime, StoredUpdateTime) > 0)
-                    {
-                        DependencyService.Get<IFile>().WriteFile(UpdateFolder, UpdateFile, UpdateTime);
-                    }
-                }
-                else
+                if (DateTime.Compare(NewUpdateTime, StoredUpdateTime) > 0)
                 {
                     DependencyService.Get<IFile>().WriteFile(UpdateFolder, UpdateFile, UpdateTime);
                 }
-                
-                string JSONDataRaw = await ContentsResponse.Content.ReadAsStringAsync();
-                JSONData = JsonConvert.DeserializeObject<RootObject>(JSONDataRaw);
-
-                string HTMLBody = "";
-
-                foreach (var Page in JSONData.contents.pages)
-                {
-                    HTMLBody += "<h1>" + Page.name + "</h1>";
-                    HTMLBody += "<h1>" + Page.slug + "</h1>";
-                    HTMLBody += "<h6>" + Page.coverImage + "</h6>";
-                    HTMLBody += "<p>" + Page.body + "</p>";
-                    HTMLBody += "<br />";
-                }
-
-                HTMLSource.Html = @"<html><body>" + HTMLBody + "</body></html>";
-
-                //WebView needs to be given a height and width request within layouts to render
-                myWebView = new WebView() { WidthRequest = 1000, HeightRequest = 1000, Source = HTMLSource };
-                layout.Children.Add(myWebView);
-
-                /*
-                response = await client.GetAsync("http://layerseven.net/images/logo.png");
-
-                response.EnsureSuccessStatusCode();
-
-                string responseData = await response.Content.ReadAsStringAsync();
-
-                string folderPath = Environment.ExternalStorageDirectory.AbsolutePath; //Android  
-                string folderPath = Environment.ExternalStorageDirectory.AbsolutePath;
-
-                DependencyService.Get<IWriteFile>().WriteFile(responseData);
-                */
-
             }
+            else
+            {
+                DependencyService.Get<IFile>().WriteFile(UpdateFolder, UpdateFile, UpdateTime);
+            }
+
+            string JSONDataRaw = await ContentsResponse.Content.ReadAsStringAsync();
+            JSONData = JsonConvert.DeserializeObject<RootObject>(JSONDataRaw);
+
+            string HTMLBody = "";
+
+            foreach (var Page in JSONData.contents.pages)
+            {
+                HTMLBody += "<h1>" + Page.name + "</h1>";
+                HTMLBody += "<h3>" + Page.slug + "</h3>";
+                HTMLBody += "<h6>" + Page.coverImage + "</h6>";
+                HTMLBody += "<p>" + Page.body + "</p>";
+                HTMLBody += "<br />";
+            }
+
+            HTMLSource.Html = @"<html><body>" + HTMLBody + "</body></html>";
+
+            myWebView = new WebView() { WidthRequest = 1000, HeightRequest = 1000, Source = HTMLSource };
+            layout.Children.Add(myWebView);
         }
 
         /// <summary>
