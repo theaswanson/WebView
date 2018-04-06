@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Net.Http;
 using Newtonsoft.Json;
+using System.Net;
 
 using Xamarin.Forms;
 using PCLStorage;
@@ -33,7 +34,7 @@ namespace WebViewSample
         /// <param name="URL">URL to display in the browser.</param>
         public InAppBrowserCode(string URL)
         {
-            if (LiveMode)
+            if (LiveMode == true)
             {
                 UpdateTimeLink = UpdateTimeLinkLive;
                 SiteContentsLink = SiteContentsLinkLive;
@@ -66,7 +67,7 @@ namespace WebViewSample
         async void GetJSON(StackLayout layout)
         {
             HtmlWebViewSource HTMLSource = new HtmlWebViewSource();
-
+            
             var client = new HttpClient();
             HttpResponseMessage ContentsResponse = await client.GetAsync(SiteContentsLink);
             HttpResponseMessage LastUpdateResponse = await client.GetAsync(UpdateTimeLink);
@@ -107,6 +108,8 @@ namespace WebViewSample
 
             string JSONDataRaw = await ContentsResponse.Content.ReadAsStringAsync();
             JSONData = JsonConvert.DeserializeObject<RootObject>(JSONDataRaw);
+
+            DependencyService.Get<IFile>().SaveImage(UpdateFolder, "image.jpg", "http://fwt.codechameleon.com/wp-content/uploads/2018/03/100-Miles-of-Trails-Event-42.jpg");
 
             string HTMLBody = "";
 

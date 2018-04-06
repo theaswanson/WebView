@@ -29,6 +29,17 @@ namespace WebViewSample.Droid
             return finalPath;
         }
 
+        public string GetPath(string fileName)
+        {
+            string path1 = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal); // app directory
+            string path2 = fileName; // custom folder and file name
+            string finalPath = Path.Combine(path1, path2);
+
+            Console.WriteLine(finalPath);
+
+            return finalPath;
+        }
+
         public async void WriteFile(string path, string fileName, string data)
         {
             File.WriteAllText(GetPath(path, fileName), data); // writes to local storage
@@ -94,6 +105,59 @@ namespace WebViewSample.Droid
         public bool FileExists(string path, string fileName)
         {
             return File.Exists(GetPath(path, fileName));
+        }
+
+        public bool FileExists(string fileName)
+        {
+            return File.Exists(GetPath(fileName));
+        }
+
+        public void SaveImage(string path, string fileName, string imageURL)
+        {
+            var webClient = new System.Net.WebClient();
+
+            webClient.DownloadDataCompleted += (s, e) => {
+                try
+                {
+                    var bytes = e.Result; // get the downloaded data
+                    string localPath = GetPath(path, fileName);
+                    File.WriteAllBytes(localPath, bytes); // writes to local storage
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.InnerException.Message);
+                }
+                
+            };
+
+            var url = new Uri(imageURL);
+
+            webClient.DownloadDataAsync(url);
+        }
+
+        public void SaveImage(string fileName, string imageURL)
+        {
+            var webClient = new System.Net.WebClient();
+
+            webClient.DownloadDataCompleted += (s, e) => {
+                try
+                {
+                    var bytes = e.Result; // get the downloaded data
+                    string localPath = GetPath("images", fileName);
+                    File.WriteAllBytes(localPath, bytes); // writes to local storage
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.InnerException.Message);
+                }
+
+            };
+
+            var url = new Uri(imageURL);
+
+            webClient.DownloadDataAsync(url);
         }
     }
 

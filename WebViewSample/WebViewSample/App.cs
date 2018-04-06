@@ -10,11 +10,14 @@ namespace WebViewSample
 {
     public interface IFile
     {
+        string GetPath(string fileName);
         string GetPath(string path, string fileName);
         void WriteFile(string path, string fileName, string data); //note that interface members are public by default
         List<string> ReadFile(string file);
         string ReadFile(string file, int lineCount);
+        bool FileExists(string fileName);
         bool FileExists(string path, string fileName); //note that interface members are public by default
+        void SaveImage(string path, string fileName, string imageURL);
     }
 
     public class App : Application
