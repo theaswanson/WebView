@@ -21,7 +21,7 @@ namespace WebViewSample.Droid
         public string GetPath(string path, string fileName)
         {
             string path1 = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal); // app directory
-            string path2 = path + fileName; // custom folder and file name
+            string path2 = path + "/" + fileName; // custom folder and file name
             string finalPath = Path.Combine(path1, path2);
 
             Console.WriteLine(finalPath);
@@ -42,6 +42,11 @@ namespace WebViewSample.Droid
 
         public async void WriteFile(string path, string fileName, string data)
         {
+            if (!Directory.Exists(GetPath(path)))
+            {
+                Directory.CreateDirectory(GetPath(path));
+            }
+
             File.WriteAllText(GetPath(path, fileName), data); // writes to local storage
         }
 
